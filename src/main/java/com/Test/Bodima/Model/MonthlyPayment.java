@@ -3,6 +3,8 @@ package com.Test.Bodima.Model;
 import java.math.BigDecimal;
 import java.sql.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,6 +23,7 @@ public class MonthlyPayment {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"payments", "hibernateLazyInitializer", "handler"})
     private User user;
 
     private Date month;

@@ -1,5 +1,6 @@
 package com.Test.Bodima.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -15,7 +16,11 @@ public class Room {
     private int capacity;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<User> users = new ArrayList<>();
+
+
+
 
     // Constructors, Getters, Setters
 

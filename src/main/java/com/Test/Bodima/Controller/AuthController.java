@@ -25,40 +25,53 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> request, Object response) {
+    public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
         try {
-            String username = request.get("name");
+            String username = request.get("username"); // ✅ Match React field name
             String password = request.get("password");
-            String email = request.get("email");
-            String phone = request.get("phone");
 
-            if (username == null || password == null  || email == null || phone == null) {
+            // Validate input
+            if (username == null || password == null) {
                 Map<String, String> error = new HashMap<>();
-                error.put("error", "Username, password, name, email, and phone are required");
+                error.put("error", "Username and password are required");
                 return ResponseEntity.badRequest().body(error);
             }
+
+            // Check if username already exists
             Optional<Login> loginOptional = loginService.getLoginByUsername(username);
             if (loginOptional.isPresent()) {
                 Map<String, String> error = new HashMap<>();
                 error.put("error", "Username is already taken");
+                return ResponseEntity.badRequest().body(error); // ✅ Return early
             }
-            User newuser =new User();
-            newuser.setName(username);
-            newuser.setPassword(password);
-            newuser.setUserId(newuser.getUserId());
-            User savedUser = userService.createUser(newuser);
+
+            // Create new User
+            User newUser = new User();
+            newUser.setName(username);
+            newUser.setPassword(password);
+            User savedUser = userService.createUser(newUser);
+
+            // Create a login entry for the new user
+            Login login = new Login();
+            login.setUsername(username);
+            login.setPassword(password); // ⚠️ In production, hash this password
+            login.setUser(savedUser);
+            loginService.createLogin(login);
+
+            // Success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Registration successful!");
+            response.put("userId", savedUser.getUserId());
+            response.put("username", savedUser.getName());
 
             return ResponseEntity.ok(response);
 
-
-        }catch (Exception e) {
+        } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Registration failed: " + e.getMessage());
             return ResponseEntity.badRequest().body(error);
         }
     }
-
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
         try {
@@ -89,7 +102,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(error);
             }
 
-            // Get user details
+
             User user = login.getUser();
 
             // Return success response with user details

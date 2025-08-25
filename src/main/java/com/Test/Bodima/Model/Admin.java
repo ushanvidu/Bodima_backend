@@ -1,5 +1,6 @@
 package com.Test.Bodima.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class Admin {
     private String email;
 
     @OneToMany(mappedBy = "admin", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<User> users = new ArrayList<>();
 
     // Constructors, Getters, Setters

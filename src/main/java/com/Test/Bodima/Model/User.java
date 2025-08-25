@@ -1,5 +1,7 @@
 package com.Test.Bodima.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.sql.Date;
@@ -31,13 +33,16 @@ public class User {
 
     @ManyToOne
     @JoinColumn(name = "room_id")
+    @JsonIgnore
     private Room room;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"user", "hibernateLazyInitializer", "handler"})
     private List<MonthlyPayment> payments = new ArrayList<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Login login;
+
 
     // Constructors, Getters, Setters
 
