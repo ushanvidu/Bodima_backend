@@ -24,51 +24,47 @@ jobs:
       - name: Build project
         run: mvn clean compile
 
-      - name: Run tests with H2 database
-        run: mvn test
+      - name: Run tests and generate reports
+        run: |
+          mvn test surefire-report:report
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
           SPRING_DATASOURCE_USERNAME: sa
           SPRING_DATASOURCE_PASSWORD: password
 
-      - name: Generate test reports
+      - name: Verify reports generated
         run: |
-          mkdir -p test-reports
-          mvn surefire-report:report || echo "HTML report generation failed, continuing..."
-          cp -r target/surefire-reports/* test-reports/ 2>/dev/null || echo "No surefire reports found"
-          cp target/site/surefire-report.html test-reports/ 2>/dev/null || echo "No HTML report found"
+          echo "Checking for generated reports..."
+          if [ -f "target/site/surefire-report.html" ]; then
+            echo "✅ HTML report found: target/site/surefire-report.html"
+            echo "📊 Report size: $(du -h target/site/surefire-report.html | cut -f1)"
+          else
+            echo "❌ HTML report not found at target/site/surefire-report.html"
+            echo "📁 Checking what exists in target/site/:"
+            ls -la target/site/ 2>/dev/null || echo "No target/site directory"
+          fi
+          
+          if [ -d "target/surefire-reports" ]; then
+            echo "✅ XML reports found in target/surefire-reports/"
+            echo "📄 Number of test files: $(find target/surefire-reports -name "*.xml" | wc -l)"
+          else
+            echo "❌ No XML reports found"
+          fi
 
-      - name: List generated reports
-        run: |
-          echo "📊 Generated Reports:"
-          find test-reports -type f 2>/dev/null || echo "No reports generated"
-          echo ""
-          echo "📁 Target directory contents:"
-          ls -la target/ 2>/dev/null || echo "No target directory"
-          ls -la target/surefire-reports/ 2>/dev/null || echo "No surefire-reports directory"
-          ls -la target/site/ 2>/dev/null || echo "No site directory"
-
-      - name: Upload test results (XML format)
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-xml
-          path: target/surefire-reports/
-          if-no-files-found: ignore
-
-      - name: Upload HTML test report (if exists)
+      - name: Upload HTML test report
         uses: actions/upload-artifact@v4
         with:
           name: test-results-html
           path: target/site/surefire-report.html
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
-      - name: Upload all test artifacts
+      - name: Upload XML test reports
         uses: actions/upload-artifact@v4
         with:
-          name: all-test-results
-          path: test-reports/
-          if-no-files-found: ignore
+          name: test-results-xml
+          path: target/surefire-reports/
+          if-no-files-found: warn
 
       - name: Build JAR package
         run: mvn package -DskipTests
@@ -79,12 +75,10 @@ jobs:
           name: bodima-app
           path: target/*.jar
 
-      - name: Show build summary
+      - name: Show final status
         run: |
-          echo "🎉 CI Pipeline Summary"
-          echo "======================"
-          echo "✅ Build: COMPLETED"
-          echo "✅ Tests: EXECUTED"
-          echo "📦 JAR: $(ls target/*.jar 2>/dev/null || echo 'Not found')"
+          echo "🎉 CI Pipeline Completed!"
+          echo "✅ Build: Successful"
+          echo "✅ Tests: Executed"
+          echo "📦 JAR: Built and ready"
           echo "📊 Reports: Generated and uploaded"
-          echo "🚀 Ready for demonstration!"

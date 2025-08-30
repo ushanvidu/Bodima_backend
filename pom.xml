@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -20,7 +20,6 @@
 		<rest-assured.version>5.4.0</rest-assured.version>
 		<selenium.version>4.17.0</selenium.version>
 		<webdrivermanager.version>5.6.2</webdrivermanager.version>
-		<maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
 		<maven-surefire-report-plugin.version>3.2.5</maven-surefire-report-plugin.version>
 	</properties>
 
@@ -122,7 +121,6 @@
 
 	<build>
 		<plugins>
-			<!-- Spring Boot Plugin -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -135,15 +133,10 @@
 					</excludes>
 				</configuration>
 			</plugin>
-
-			<!-- Compiler Plugin with explicit Lombok version -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -153,48 +146,32 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
-
-			<!-- Surefire Plugin for Unit Tests -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>${maven-surefire-plugin.version}</version>
+				<version>3.2.5</version>
 				<configuration>
 					<includes>
 						<include>**/*Test.java</include>
 						<include>**/*Tests.java</include>
 					</includes>
-					<excludes>
-						<exclude>**/Abstract*.java</exclude>
-					</excludes>
 				</configuration>
 			</plugin>
 
-			<!-- Surefire Report Plugin for HTML Reports -->
+			<!-- ADD THIS PLUGIN FOR HTML REPORTS -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
 				<version>${maven-surefire-report-plugin.version}</version>
+				<executions>
+					<execution>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
-
-
-
-
-				<!-- Surefire Report Plugin -->
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-surefire-report-plugin</artifactId>
-					<version>3.2.5</version>
-					<executions>
-						<execution>
-							<phase>test</phase>
-							<goals>
-								<goal>report</goal>
-							</goals>
-						</execution>
-					</executions>
-				</plugin>
-			</plugins>
-
+		</plugins>
 	</build>
 </project>
