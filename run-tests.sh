@@ -86,7 +86,7 @@ echo ""
 print_status "info" "Test Results Summary:"
 echo "========================"
 
-if [ -d "target/surefire-reports" ]; then
+if [ -d "itarget/surefire-reports" ]; then
     PASSED=$(find target/surefire-reports -name "*.xml" -exec grep -l "<testcase" {} \; | xargs grep -c "<testcase" | awk '{sum+=$1} END {print sum+0}')
     FAILED=$(find target/surefire-reports -name "*.xml" -exec grep -c "<failure" {} \; | awk '{sum+=$1} END {print sum+0}')
     SKIPPED=$(find target/surefire-reports -name "*.xml" -exec grep -c "<skipped" {} \; | awk '{sum+=$1} END {print sum+0}')

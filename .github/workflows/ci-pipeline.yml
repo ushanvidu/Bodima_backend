@@ -62,8 +62,10 @@ jobs:
       - name: Generate test reports
         run: |
           echo "📊 Generating Test Reports..."
+          mkdir -p target/surefire-reports
           mvn test-compile
           mvn surefire-report:report-only
+          echo "📋 Reports generated successfully"
         continue-on-error: true
 
       - name: Display test results
@@ -110,6 +112,14 @@ jobs:
           path: |
             target/surefire-reports/
             target/cucumber-reports/
+          retention-days: 30
+
+      - name: Upload HTML reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: html-reports-${{ matrix.java-version }}
+          path: |
             target/site/
           retention-days: 30
 
