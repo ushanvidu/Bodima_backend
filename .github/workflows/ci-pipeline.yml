@@ -34,13 +34,9 @@ jobs:
 
       - name: Generate test reports
         run: |
-          # Create reports directory
           mkdir -p test-reports
-          # Generate surefire report
           mvn surefire-report:report || echo "HTML report generation failed, continuing..."
-          # Copy all test result files
           cp -r target/surefire-reports/* test-reports/ 2>/dev/null || echo "No surefire reports found"
-          # Copy HTML report if it exists
           cp target/site/surefire-report.html test-reports/ 2>/dev/null || echo "No HTML report found"
 
       - name: List generated reports
