@@ -62,7 +62,8 @@ jobs:
       - name: Generate test reports
         run: |
           echo "📊 Generating Test Reports..."
-          mvn surefire-report:report
+          mvn test-compile
+          mvn surefire-report:report-only
         continue-on-error: true
 
       - name: Display test results
