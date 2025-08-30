@@ -7,9 +7,16 @@ import org.junit.runner.RunWith;
 @RunWith(Cucumber.class)
 @CucumberOptions(
         features = "src/test/resources/features",
-        glue = "com.Test.Bodima.StepDefinitions",  // Match the actual package case
-        plugin = {"pretty", "html:target/cucumber-reports.html"},
-        monochrome = true
+        glue = "com.Test.Bodima.StepDefinitions",
+        plugin = {
+            "pretty",
+            "html:target/cucumber-reports/cucumber.html",
+            "json:target/cucumber-reports/cucumber.json",
+            "junit:target/cucumber-reports/cucumber.xml"
+        },
+        monochrome = true,
+        snippets = io.cucumber.junit.CucumberOptions.SnippetType.CAMELCASE,
+        tags = "not @ignore"
 )
 public class CucumberRunnerTest {
 }

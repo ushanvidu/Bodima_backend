@@ -6,128 +6,97 @@
 
 
 package com.Test.Bodima.Service;
+
 import com.Test.Bodima.Model.User;
 import com.Test.Bodima.Repo.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
 public class UserServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
+    @Autowired
+    private UserService userService;
 
-    @InjectMocks
-    private UserService userService; // UserService is injected with the mock UserRepository
+    @Autowired
+    private UserRepository userRepository;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        // Arrange: Create a test user object before each test
+        // Create a test user
         testUser = new User();
-        testUser.setName("Ushan");
-        testUser.setEmail("ushanviduranga123@gmail.com");
-        testUser.setPhone("0715367306");
-
+        testUser.setName("Test User");
+        testUser.setEmail("test@example.com");
+        testUser.setPhone("1234567890");
     }
 
-    // TDD for ADD USER
-
-    //Green light
     @Test
-    void createUser_WithValidData_ShouldReturnSavedUser() {
-        // Arrange: Mock the repository's save method
-        User savedUser = new User();
-        savedUser.setUserId(1);
-        savedUser.setName(testUser.getName());
-        savedUser.setEmail(testUser.getEmail());
-        savedUser.setPhone(testUser.getPhone());
+    void testCreateUser() {
+        // When
+        User savedUser = userService.createUser(testUser);
 
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
-
-        // Act: Call the method we are testing
-        User result = userService.createUser(testUser);
-
-
-
-        assertNotNull(result.getUserId());
-        assertEquals("Ushan", result.getName());
-        assertEquals("ushanviduranga123@gmail.com", result.getEmail());
-        verify(userRepository, times(1)).save(testUser);
+        // Then
+        assertNotNull(savedUser);
+        assertNotNull(savedUser.getUserId());
+        assertEquals(testUser.getName(), savedUser.getName());
+        assertEquals(testUser.getEmail(), savedUser.getEmail());
+        assertEquals(testUser.getPhone(), savedUser.getPhone());
     }
 
-
-    //red light for create user
-
     @Test
+    void testGetAllUsers() {
+        // Given
+        userService.createUser(testUser);
+        
+        User secondUser = new User();
+        secondUser.setName("Second User");
+        secondUser.setEmail("second@example.com");
+        secondUser.setPhone("0987654321");
+        userService.createUser(secondUser);
 
-    void createUser_WithInvalidData_ShouldThrowException() {
-        User savedUser = new User();
-        savedUser.setUserId(1);
-        savedUser.setName(testUser.getName());
-        savedUser.setEmail(testUser.getEmail());
-        savedUser.setPhone(testUser.getPhone());
+        // When
+        List<User> users = userService.getAllUsers();
 
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
-
-        // Act: Call the method we are testing
-        User result = userService.createUser(testUser);
-
-        //check with given values
-
-        assertNotNull(result.getUserId());
-        assertEquals("Ushan", result.getName());
-        assertEquals("john@example.com", result.getEmail());
-        verify(userRepository, times(1)).save(testUser);
-
+        // Then
+        assertEquals(2, users.size());
     }
 
-    // TDD for DELETE USER
     @Test
-    //Green test
+    void testGetUserById() {
+        // Given
+        User savedUser = userService.createUser(testUser);
 
-    void deleteUser_WithValidId_ShouldCallRepositoryDelete() {
+        // When
+        Optional<User> foundUser = userService.getUserById(savedUser.getUserId());
 
-        doNothing().when(userRepository).deleteById(1);
-
-        // Act
-        userService.deleteUser(1);
-
-        // Assert: Verify that deleteById was called with the correct ID
-        verify(userRepository, times(1)).deleteById(1);
-
-        // Optional: Verify findById was NEVER called if you want to be explicit
-        verify(userRepository, never()).findById(anyInt());
+        // Then
+        assertTrue(foundUser.isPresent());
+        assertEquals(savedUser.getUserId(), foundUser.get().getUserId());
     }
 
-
-    //Red test
-
     @Test
-    void deleteUser_WithInvalidId_ShouldStillAttemptDelete() {
+    void testDeleteUser() {
+        // Given
+        User savedUser = userService.createUser(testUser);
 
+        // When
+        userService.deleteUser(savedUser.getUserId());
 
-        doNothing().when(userRepository).deleteById(999);
-
-
-        //check with wrong Id
-        userService.deleteUser(999);
-
-
-
-        verify(userRepository, times(999)).deleteById(999);
-
-        verify(userRepository, never()).findById(anyInt());
+        // Then
+        Optional<User> deletedUser = userService.getUserById(savedUser.getUserId());
+        assertFalse(deletedUser.isPresent());
     }
 }

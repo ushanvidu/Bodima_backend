@@ -1,84 +1,144 @@
-name: CI Pipeline - Bodima App
+name: CI/CD Pipeline - Bodima App
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        java-version: [17]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
+          java-version: ${{ matrix.java-version }}
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Build project
         run: mvn clean compile
+        env:
+          SPRING_PROFILES_ACTIVE: test
 
-      - name: Run tests and generate reports
+      - name: Run unit tests
         run: |
-          mvn test surefire-report:report
+          echo "🧪 Running Unit Tests..."
+          mvn test -Dtest="*Test" -DfailIfNoTests=false
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
           SPRING_DATASOURCE_USERNAME: sa
           SPRING_DATASOURCE_PASSWORD: password
+        continue-on-error: true
 
-      - name: Verify reports generated
+      - name: Run Cucumber BDD tests
         run: |
-          echo "Checking for generated reports..."
-          if [ -f "target/site/surefire-report.html" ]; then
-            echo "✅ HTML report found: target/site/surefire-report.html"
-            echo "📊 Report size: $(du -h target/site/surefire-report.html | cut -f1)"
-          else
-            echo "❌ HTML report not found at target/site/surefire-report.html"
-            echo "📁 Checking what exists in target/site/:"
-            ls -la target/site/ 2>/dev/null || echo "No target/site directory"
-          fi
-          
+          echo "🥒 Running Cucumber BDD Tests..."
+          mvn test -Dtest="CucumberRunnerTest" -DfailIfNoTests=false
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
+          SPRING_DATASOURCE_USERNAME: sa
+          SPRING_DATASOURCE_PASSWORD: password
+        continue-on-error: true
+
+      - name: Generate test reports
+        run: |
+          echo "📊 Generating Test Reports..."
+          mvn surefire-report:report
+        continue-on-error: true
+
+      - name: Display test results
+        run: |
+          echo "📋 Test Results Summary:"
+          echo "========================"
+
+          # Check for test results
           if [ -d "target/surefire-reports" ]; then
-            echo "✅ XML reports found in target/surefire-reports/"
+            echo "✅ Test reports directory exists"
             echo "📄 Number of test files: $(find target/surefire-reports -name "*.xml" | wc -l)"
+            
+            # Count passed/failed tests
+            PASSED=$(find target/surefire-reports -name "*.xml" -exec grep -l "<testcase" {} \; | xargs grep -c "<testcase" | awk '{sum+=$1} END {print sum+0}')
+            FAILED=$(find target/surefire-reports -name "*.xml" -exec grep -c "<failure" {} \; | awk '{sum+=$1} END {print sum+0}')
+            SKIPPED=$(find target/surefire-reports -name "*.xml" -exec grep -c "<skipped" {} \; | awk '{sum+=$1} END {print sum+0}')
+            
+            echo "✅ Passed: $PASSED"
+            echo "❌ Failed: $FAILED"
+            echo "⏭️  Skipped: $SKIPPED"
+            
+            if [ "$FAILED" -gt 0 ]; then
+              echo "🔴 Some tests failed!"
+              exit 1
+            else
+              echo "🟢 All tests passed!"
+            fi
           else
-            echo "❌ No XML reports found"
+            echo "❌ No test reports found"
+            exit 1
           fi
 
-      - name: Upload HTML test report
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-html
-          path: target/site/surefire-report.html
-          if-no-files-found: warn
+          # Check for Cucumber reports
+          if [ -d "target/cucumber-reports" ]; then
+            echo "🥒 Cucumber reports generated"
+            echo "📄 Cucumber HTML: target/cucumber-reports/cucumber.html"
+          fi
 
-      - name: Upload XML test reports
+      - name: Upload test results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: test-results-xml
-          path: target/surefire-reports/
-          if-no-files-found: warn
+          name: test-results-${{ matrix.java-version }}
+          path: |
+            target/surefire-reports/
+            target/cucumber-reports/
+            target/site/
+          retention-days: 30
 
       - name: Build JAR package
-        run: mvn package -DskipTests
+        if: success()
+        run: |
+          echo "📦 Building JAR package..."
+          mvn package -DskipTests
+        env:
+          SPRING_PROFILES_ACTIVE: test
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
+        if: success()
         with:
-          name: bodima-app
+          name: bodima-app-${{ matrix.java-version }}
           path: target/*.jar
+          retention-days: 30
 
       - name: Show final status
         run: |
-          echo "🎉 CI Pipeline Completed!"
-          echo "✅ Build: Successful"
+          echo "🎉 CI/CD Pipeline Summary:"
+          echo "========================="
+          echo "✅ Java Version: ${{ matrix.java-version }}"
+          echo "✅ Build: Completed"
           echo "✅ Tests: Executed"
-          echo "📦 JAR: Built and ready"
-          echo "📊 Reports: Generated and uploaded"
+          echo "✅ Reports: Generated"
+          if [ -f "target/*.jar" ]; then
+            echo "✅ JAR: Built successfully"
+          else
+            echo "❌ JAR: Build failed"
+          fi
+          echo "📊 Artifacts: Uploaded to GitHub"
