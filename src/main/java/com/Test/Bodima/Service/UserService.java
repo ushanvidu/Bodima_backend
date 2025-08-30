@@ -1,7 +1,7 @@
 package com.Test.Bodima.Service;
 
 import com.Test.Bodima.Model.User;
-import com.Test.Bodima.Repo.UserRepository; // ✅ Correct import
+import com.Test.Bodima.Repo.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,6 +36,7 @@ public class UserService {
     public User updateUser(Integer id, User userDetails) {
         return userRepository.findById(id)
                 .map(user -> {
+                    user.setUserId(userDetails.getUserId());
                     user.setName(userDetails.getName());
                     user.setEmail(userDetails.getEmail());
                     user.setPhone(userDetails.getPhone());
