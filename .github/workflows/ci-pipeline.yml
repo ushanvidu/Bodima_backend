@@ -1,4 +1,4 @@
-name: Simple CI Pipeline
+name: CI Pipeline - Bodima App
 
 on:
   push:
@@ -22,38 +22,51 @@ jobs:
           cache: 'maven'
 
       - name: Build and Test with Maven
-        run: mvn clean test
+        run: mvn clean test surefire-report:report
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
           SPRING_DATASOURCE_USERNAME: sa
           SPRING_DATASOURCE_PASSWORD: password
 
-      - name: Show Test Results
+      - name: Verify Test Reports Exist
         run: |
-          echo "📋 TEST RESULTS SUMMARY"
-          echo "======================="
-          
-          # Check if tests ran successfully
-          if [ -d "target/surefire-reports" ]; then
-            echo "✅ Test reports generated in target/surefire-reports/"
-            # Count test files
-            TEST_FILES=$(find target/surefire-reports -name "*.xml" | wc -l)
-            echo "📊 Number of test suites: $TEST_FILES"
+          echo "Checking for test reports..."
+          if [ -f "target/site/surefire-report.html" ]; then
+            echo "✅ HTML report generated: target/site/surefire-report.html"
           else
-            echo "ℹ️  No detailed test reports found"
+            echo "⚠️  HTML report not found, checking for XML reports..."
           fi
           
-          # Simple success message
-          echo "🎉 Build and test completed successfully!"
+          if [ -d "target/surefire-reports" ]; then
+            echo "✅ XML reports generated in: target/surefire-reports/"
+            echo "Number of test suites: $(find target/surefire-reports -name "*.xml" | wc -l)"
+          else
+            echo "❌ No test reports found"
+            exit 1
+          fi
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/site/surefire-report.html
 
       - name: Build JAR Package
         run: mvn package -DskipTests
 
-      - name: Upload Build Artifacts
+      - name: Upload JAR Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: |
-            target/*.jar
-            target/surefire-reports/
+          name: bodima-app
+          path: target/*.jar
+
+      - name: Show Build Summary
+        run: |
+          echo "🎉 BUILD SUMMARY"
+          echo "================"
+          echo "✅ Tests completed successfully"
+          echo "📦 JAR file: $(ls target/*.jar 2>/dev/null || echo 'Not found')"
+          echo "📊 Test reports available as artifacts"
