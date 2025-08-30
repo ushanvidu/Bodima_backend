@@ -21,52 +21,36 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build and Test with Maven
-        run: mvn clean test surefire-report:report
+      - name: Build project
+        run: mvn clean compile
+
+      - name: Run tests with H2 database
+        run: mvn test
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
           SPRING_DATASOURCE_USERNAME: sa
           SPRING_DATASOURCE_PASSWORD: password
 
-      - name: Verify Test Reports Exist
-        run: |
-          echo "Checking for test reports..."
-          if [ -f "target/site/surefire-report.html" ]; then
-            echo "✅ HTML report generated: target/site/surefire-report.html"
-          else
-            echo "⚠️  HTML report not found, checking for XML reports..."
-          fi
-          
-          if [ -d "target/surefire-reports" ]; then
-            echo "✅ XML reports generated in: target/surefire-reports/"
-            echo "Number of test suites: $(find target/surefire-reports -name "*.xml" | wc -l)"
-          else
-            echo "❌ No test reports found"
-            exit 1
-          fi
+      - name: Generate test reports
+        run: mvn surefire-report:report
 
-      - name: Upload Test Reports
+      - name: Build JAR package
+        run: mvn package -DskipTests
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
+          name: build-artifacts
           path: |
+            target/*.jar
             target/surefire-reports/
             target/site/surefire-report.html
 
-      - name: Build JAR Package
-        run: mvn package -DskipTests
-
-      - name: Upload JAR Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bodima-app
-          path: target/*.jar
-
-      - name: Show Build Summary
+      - name: Show success message
         run: |
-          echo "🎉 BUILD SUMMARY"
-          echo "================"
-          echo "✅ Tests completed successfully"
-          echo "📦 JAR file: $(ls target/*.jar 2>/dev/null || echo 'Not found')"
-          echo "📊 Test reports available as artifacts"
+          echo "🎉 CI Pipeline Completed Successfully!"
+          echo "✅ Build: SUCCESS"
+          echo "✅ Tests: PASSED"
+          echo "✅ Package: CREATED"
+          echo "📦 JAR file: $(ls target/*.jar)"
